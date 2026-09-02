@@ -334,7 +334,7 @@ async def cancel_order(order_id: str) -> Any:
 async def open_positions() -> list[dict[str, Any]]:
     data = await signed_post(
         "/exchange/v1/derivatives/futures/positions",
-        {"page": 1, "size": 50, "margin_currency_short_name": ["INR"]},
+        {"page": 1, "size": 50, "margin_currency_short_name": "INR"},
     )
     return data if isinstance(data, list) else []
 
