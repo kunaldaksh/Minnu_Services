@@ -363,7 +363,7 @@ async def find_open_position(pair: str, side: str) -> dict[str, Any] | None:
             position_side = str(position.get("side") or "").lower()
             active = position.get("active_pos")
             try:
-                is_active = active is not None and float(active) != 0
+                is_active = active is None or float(active) != 0
             except (TypeError, ValueError):
                 is_active = False
             logger.warning(
