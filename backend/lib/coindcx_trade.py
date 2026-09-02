@@ -5,6 +5,7 @@ import asyncio
 import hashlib
 import hmac
 import json
+import logging
 import os
 import time
 from decimal import ROUND_CEILING, ROUND_DOWN, ROUND_HALF_UP, Decimal
@@ -25,6 +26,8 @@ BASE = COINDCX_API_BASE_URL
 BALANCE_SETTLE_WINDOW = float(COINDCX_BALANCE_SETTLE_WINDOW)
 POSITION_LOOKUP_ATTEMPTS = int(COINDCX_POSITION_LOOKUP_ATTEMPTS)
 POSITION_LOOKUP_DELAY = float(COINDCX_POSITION_LOOKUP_DELAY)
+
+logger = logging.getLogger(__name__)
 
 
 def credentials() -> tuple[str, str]:
@@ -350,17 +353,23 @@ def _position_recency(pos: dict[str, Any]) -> float:
 async def find_open_position(pair: str, side: str) -> dict[str, Any] | None:
     for attempt in range(POSITION_LOOKUP_ATTEMPTS):
         positions = await open_positions()
+        logger.warning("RAW POSITIONS (attempt %d): %s", attempt, positions)
         matches: list[dict[str, Any]] = []
         for position in positions:
             if not isinstance(position, dict):
                 continue
+            logger.warning("POSITION ITEM: %s", position)
             position_pair = str(position.get("pair") or position.get("symbol") or "")
             position_side = str(position.get("side") or "").lower()
             active = position.get("active_pos")
             try:
-                is_active = active is None or float(active) != 0
+                is_active = active is not None and float(active) != 0
             except (TypeError, ValueError):
                 is_active = False
+            logger.warning(
+                "CHECK pair=%s side=%s active_pos_raw=%s is_active=%s (want pair=%s side=%s)",
+                position_pair, position_side, active, is_active, pair, side.lower(),
+            )
             if position_pair == pair and position_side == side.lower() and is_active:
                 position_id = position.get("id") or position.get("position_id")
                 if position_id:
